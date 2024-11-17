@@ -26,26 +26,47 @@
 #   - Exits with code 37 if any stride < 1
 # =======================================================
 dot:
-    li t0, 1
-    blt a2, t0, error_terminate  
-    blt a3, t0, error_terminate   
-    blt a4, t0, error_terminate  
-
+    li t5, 1              
+    blt a2, t5, error_terminate  
+    blt a3, t5, error_terminate   
+    blt a4, t5, error_terminate  
+    slli a3, a3, 2
+    slli a4, a4, 2
     li t0, 0            
-    li t1, 0         
+    li t1, 0            
 
 loop_start:
-    bge t1, a2, loop_end
-    # TODO: Add your own implementation
+    beq t1, a2, loop_end
+    lw t2, 0(a0)       
+    lw t3, 0(a1)        
+    li t4, 0           
+
+
+    mul_loop:
+        beqz t3, mul_end
+        andi t6, t3, 1      
+        beqz t6, skip_add
+        add t4, t4, t2      
+    skip_add:
+        srli t3, t3, 1      
+        slli t2, t2, 1       
+        j mul_loop
+
+    mul_end:
+        add t0, t0, t4      
+        add a0, a0, a3       
+        add a1, a1, a4      
+        addi t1, t1, 1       
+        j loop_start
 
 loop_end:
     mv a0, t0
     jr ra
 
 error_terminate:
-    blt a2, t0, set_error_36
+    blt a2, t5, set_error_36  
     li a0, 37
-    j exit
+    j exit           
 
 set_error_36:
     li a0, 36

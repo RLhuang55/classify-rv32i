@@ -23,13 +23,26 @@
 #   Result: [ 0, 0, 3,  0, 5]
 # ==============================================================================
 relu:
-    li t0, 1             
-    blt a1, t0, error     
+    li t0, 1  
+    blt a1, t0, error   #if a1 < 1 means there's no elements in array
     li t1, 0             
 
 loop_start:
     # TODO: Add your own implementation
+    beqz a1, done    #a1 : loop count   
+    lw t2, 0(a0)
+    bge t2, t1, loop_end     # if element > 0
+    sw t1, 0(a0)        #if element < 0, store 0 to array
 
+    
+loop_end:
+    addi a0, a0, 4  # next element
+    addi a1, a1, -1 # loop coont -1
+    j loop_start
+    
 error:
     li a0, 36          
-    j exit          
+    j exit         
+
+done:
+    jr ra

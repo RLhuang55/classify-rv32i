@@ -23,15 +23,31 @@
 # =================================================================
 argmax:
     li t6, 1
-    blt a1, t6, handle_error
+    blt a1, t6, handle_error    #if element num < 1
 
-    lw t0, 0(a0)
+    lw t0, 0(a0)    #now val
 
-    li t1, 0
-    li t2, 1
+    li t1, 0    #max index
+    li t2, 1    #now index
 loop_start:
     # TODO: Add your own implementation
-
+    addi a1, a1, -1
+    beqz a1, done   #if loop coutn = 0 
+    lw t3, 4(a0)    #next val
+    bge t3, t0, update #if next val >= now val
+    j skip  #no bigger than : continue
+update:
+    beq t3, t0, skip    #if next val = now val : keep now val index
+    mv t0, t3   # update max val
+    mv t1, t2   # update max inddex
+    
+skip:
+    addi a0, a0, 4  #next element
+    addi t2, t2, 1  #index++
+    j loop_start    
+done:
+    mv a0, t1
+    jr ra
 handle_error:
     li a0, 36
     j exit

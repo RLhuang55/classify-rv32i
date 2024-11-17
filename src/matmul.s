@@ -1,38 +1,6 @@
 .globl matmul
 
 .text
-# =======================================================
-# FUNCTION: Matrix Multiplication Implementation
-#
-# Performs operation: D = M0 × M1
-# Where:
-#   - M0 is a (rows0 × cols0) matrix
-#   - M1 is a (rows1 × cols1) matrix
-#   - D is a (rows0 × cols1) result matrix
-#
-# Arguments:
-#   First Matrix (M0):
-#     a0: Memory address of first element
-#     a1: Row count
-#     a2: Column count
-#
-#   Second Matrix (M1):
-#     a3: Memory address of first element
-#     a4: Row count
-#     a5: Column count
-#
-#   Output Matrix (D):
-#     a6: Memory address for result storage
-#
-# Validation (in sequence):
-#   1. Validates M0: Ensures positive dimensions
-#   2. Validates M1: Ensures positive dimensions
-#   3. Validates multiplication compatibility: M0_cols = M1_rows
-#   All failures trigger program exit with code 38
-#
-# Output:
-#   None explicit - Result matrix D populated in-place
-# =======================================================
 matmul:
     # Error checks
     li t0 1
@@ -79,13 +47,14 @@ inner_loop_start:
 #   a0 (int)  is the dot product of arr0 and arr1
     beq s1, a5, inner_loop_end
 
-    addi sp, sp, -24
+    addi sp, sp, -28
     sw a0, 0(sp)
     sw a1, 4(sp)
     sw a2, 8(sp)
     sw a3, 12(sp)
     sw a4, 16(sp)
     sw a5, 20(sp)
+    sw a6, 24(sp)
     
     mv a0, s3 # setting pointer for matrix A into the correct argument value
     mv a1, s4 # setting pointer for Matrix B into the correct argument value
@@ -93,7 +62,7 @@ inner_loop_start:
     li a3, 1 # stride for matrix A
     mv a4, a5 # stride for matrix B
     
-    jal dot
+    jal ra, dot
     
     mv t0, a0 # storing result of the dot product into t0
     
@@ -103,7 +72,8 @@ inner_loop_start:
     lw a3, 12(sp)
     lw a4, 16(sp)
     lw a5, 20(sp)
-    addi sp, sp, 24
+    lw a6, 24(sp)
+    addi sp, sp, 28
     
     sw t0, 0(s2)
     addi s2, s2, 4 # Incrememtning pointer for result matrix
@@ -115,8 +85,43 @@ inner_loop_start:
     j inner_loop_start
     
 inner_loop_end:
-    # TODO: Add your own implementation
+    # Increment outer loop counter i
+    addi s0, s0, 1
+
+    # Update matrix A pointer to the next row
+    # Replace 'mul t0, s0, a2' with RV32I instructions
+    li t0, 0          # Initialize t0 = 0 (result)
+    mv t1, a2         # t1 = a2 (multiplier)
+    mv t2, s0         # t2 = s0 (multiplicand)
+
+mult_loop:
+    beq t1, x0, mult_end
+    add t0, t0, t2    # t0 += s0
+    addi t1, t1, -1   # t1 -= 1
+    j mult_loop
+
+mult_end:
+    slli t0, t0, 2    # t0 = t0 * 4 (bytes per element)
+    add t1, a0, t0    # t1 = A + i * m * 4
+    mv s3, t1         # s3 = pointer to A[i][0]
+
+    j outer_loop_start
+
+outer_loop_end:
+    # =========================
+    # Function Epilogue: Restore registers and return
+    # =========================
+    lw ra, 0(sp)               # Restore return address
+    lw s0, 4(sp)               # Restore s0
+    lw s1, 8(sp)               # Restore s1
+    lw s2, 12(sp)              # Restore s2
+    lw s3, 16(sp)              # Restore s3
+    lw s4, 20(sp)              # Restore s4
+    lw s5, 24(sp)              # Restore s5
+    addi sp, sp, 28            # Release stack space
+    jr ra                      # Return to caller
 
 error:
     li a0, 38
-    j exit
+    jal exit
+

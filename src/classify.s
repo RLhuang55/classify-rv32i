@@ -1,5 +1,5 @@
 .globl classify
-
+.globl classify 
 .text
 # =====================================
 # NEURAL NETWORK CLASSIFIER
@@ -32,13 +32,13 @@ classify:
     li t0, 5
     blt a0, t0, error_args
     
-    # Prolouge
+    # Prologue
     addi sp, sp, -48
     
     sw ra, 0(sp)
     
-    sw s0, 4(sp) # m0 matrix
-    sw s1, 8(sp) # m1 matrix
+    sw s0, 4(sp)  # m0 matrix
+    sw s1, 8(sp)  # m1 matrix
     sw s2, 12(sp) # input matrix
     
     sw s3, 16(sp) # m0 matrix rows
@@ -73,12 +73,12 @@ classify:
     lw a1, 4(sp) # restores the argument pointer
     
     lw a0, 4(a1) # set argument 1 for the read_matrix function  
-    mv a1, s3 # set argument 2 for the read_matrix function
-    mv a2, s4 # set argument 3 for the read_matrix function
+    mv a1, s3    # set argument 2 for the read_matrix function
+    mv a2, s4    # set argument 3 for the read_matrix function
     
     jal read_matrix
     
-    mv s0, a0 # setting s0 to the m0, aka the return value of read_matrix
+    mv s0, a0    # setting s0 to the m0, aka the return value of read_matrix
     
     lw a0, 0(sp)
     lw a1, 4(sp)
@@ -106,12 +106,12 @@ classify:
     lw a1, 4(sp) # restores the argument pointer
     
     lw a0, 8(a1) # set argument 1 for the read_matrix function  
-    mv a1, s5 # set argument 2 for the read_matrix function
-    mv a2, s6 # set argument 3 for the read_matrix function
+    mv a1, s5    # set argument 2 for the read_matrix function
+    mv a2, s6    # set argument 3 for the read_matrix function
     
     jal read_matrix
     
-    mv s1, a0 # setting s1 to the m1, aka the return value of read_matrix
+    mv s1, a0    # setting s1 to the m1, aka the return value of read_matrix
     
     lw a0, 0(sp)
     lw a1, 4(sp)
@@ -140,12 +140,12 @@ classify:
     lw a1, 4(sp) # restores the argument pointer
     
     lw a0, 12(a1) # set argument 1 for the read_matrix function  
-    mv a1, s7 # set argument 2 for the read_matrix function
-    mv a2, s8 # set argument 3 for the read_matrix function
+    mv a1, s7    # set argument 2 for the read_matrix function
+    mv a2, s8    # set argument 3 for the read_matrix function
     
     jal read_matrix
     
-    mv s2, a0 # setting s2 to the input matrix, aka the return value of read_matrix
+    mv s2, a0    # setting s2 to the input matrix, aka the return value of read_matrix
     
     lw a0, 0(sp)
     lw a1, 4(sp)
@@ -164,23 +164,36 @@ classify:
     sw a5, 20(sp)
     sw a6, 24(sp)
     
-    lw t0, 0(s3)
-    lw t1, 0(s8)
-    # mul a0, t0, t1 # FIXME: Replace 'mul' with your own implementation
-    slli a0, a0, 2
+    lw t0, 0(s3)      # Load m0 rows
+    lw t1, 0(s8)      # Load input cols
+
+    # Replace 'mul a0, t0, t1' with repeated addition
+    li t2, 0          # Initialize result to 0
+    mv t3, t1         # Counter = t1
+
+multiply_a0_t0_t1_h:
+    beq t3, x0, multiply_a0_t0_t1_h_done
+    add t2, t2, t0    # result += t0
+    addi t3, t3, -1   # counter--
+    j multiply_a0_t0_t1_h
+
+multiply_a0_t0_t1_h_done:
+    mv a0, t2        # a0 = t0 * t1
+
+    slli a0, a0, 2    # a0 = a0 * 4 (bytes per element)
     jal malloc 
     beq a0, x0, error_malloc
-    mv s9, a0 # move h to s9
+    mv s9, a0        # move h to s9
     
-    mv a6, a0 # h 
+    mv a6, a0        # h 
     
-    mv a0, s0 # move m0 array to first arg
-    lw a1, 0(s3) # move m0 rows to second arg
-    lw a2, 0(s4) # move m0 cols to third arg
+    mv a0, s0        # move m0 array to first arg
+    lw a1, 0(s3)      # move m0 rows to second arg
+    lw a2, 0(s4)      # move m0 cols to third arg
     
-    mv a3, s2 # move input array to fourth arg
-    lw a4, 0(s7) # move input rows to fifth arg
-    lw a5, 0(s8) # move input cols to sixth arg
+    mv a3, s2        # move input array to fourth arg
+    lw a4, 0(s7)      # move input rows to fifth arg
+    lw a5, 0(s8)      # move input cols to sixth arg
     
     jal matmul
     
@@ -200,12 +213,23 @@ classify:
     sw a0, 0(sp)
     sw a1, 4(sp)
     
-    mv a0, s9 # move h to the first argument
-    lw t0, 0(s3)
-    lw t1, 0(s8)
-    # mul a1, t0, t1 # length of h array and set it as second argument
-    # FIXME: Replace 'mul' with your own implementation
-    
+    mv a0, s9        # move h to the first argument
+    lw t0, 0(s3)      # Load m0 rows
+    lw t1, 0(s8)      # Load input cols
+
+    # Replace 'mul a1, t0, t1' with repeated addition
+    li t2, 0          # Initialize result to 0
+    mv t3, t1         # Counter = t1
+
+multiply_a1_t0_t1_relu:
+    beq t3, x0, multiply_a1_t0_t1_relu_done
+    add t2, t2, t0    # result += t0
+    addi t3, t3, -1   # counter--
+    j multiply_a1_t0_t1_relu
+
+multiply_a1_t0_t1_relu_done:
+    mv a1, t2        # a1 = t0 * t1
+
     jal relu
     
     lw a0, 0(sp)
@@ -224,23 +248,36 @@ classify:
     sw a5, 20(sp)
     sw a6, 24(sp)
     
-    lw t0, 0(s3)
-    lw t1, 0(s6)
-    # mul a0, t0, t1 # FIXME: Replace 'mul' with your own implementation
-    slli a0, a0, 2
+    lw t0, 0(s3)      # Load m0 rows
+    lw t1, 0(s6)      # Load m1 cols
+
+    # Replace 'mul a0, t0, t1' with repeated addition
+    li t2, 0          # Initialize result to 0
+    mv t3, t1         # Counter = t1
+
+multiply_a0_t0_t1_o:
+    beq t3, x0, multiply_a0_t0_t1_o_done
+    add t2, t2, t0    # result += t0
+    addi t3, t3, -1   # counter--
+    j multiply_a0_t0_t1_o
+
+multiply_a0_t0_t1_o_done:
+    mv a0, t2        # a0 = t0 * t1
+
+    slli a0, a0, 2    # a0 = a0 * 4 (bytes per element)
     jal malloc 
     beq a0, x0, error_malloc
-    mv s10, a0 # move o to s10
+    mv s10, a0       # move o to s10
     
-    mv a6, a0 # o
+    mv a6, a0        # o
     
-    mv a0, s1 # move m1 array to first arg
-    lw a1, 0(s5) # move m1 rows to second arg
-    lw a2, 0(s6) # move m1 cols to third arg
+    mv a0, s1        # move m1 array to first arg
+    lw a1, 0(s5)      # move m1 rows to second arg
+    lw a2, 0(s6)      # move m1 cols to third arg
     
-    mv a3, s9 # move h array to fourth arg
-    lw a4, 0(s3) # move h rows to fifth arg
-    lw a5, 0(s8) # move h cols to sixth arg
+    mv a3, s9        # move h array to fourth arg
+    lw a4, 0(s3)      # move h rows to fifth arg
+    lw a5, 0(s8)      # move h cols to sixth arg
     
     jal matmul
     
@@ -262,10 +299,10 @@ classify:
     sw a2, 8(sp)
     sw a3, 12(sp)
     
-    lw a0, 16(a1) # load filename string into first arg
-    mv a1, s10 # load array into second arg
-    lw a2, 0(s5) # load number of rows into fourth arg
-    lw a3, 0(s8) # load number of cols into third arg
+    lw a0, 16(a1)     # load filename string into first arg
+    mv a1, s10        # load array into second arg
+    lw a2, 0(s5)      # load number of rows into fourth arg
+    lw a3, 0(s8)      # load number of cols into third arg
     
     jal write_matrix
     
@@ -283,26 +320,37 @@ classify:
     sw a1, 4(sp)
     sw a2, 8(sp)
     
-    mv a0, s10 # load o array into first arg
-    lw t0, 0(s3)
-    lw t1, 0(s6)
-    mul a1, t0, t1 # load length of array into second arg
-    # FIXME: Replace 'mul' with your own implementation
-    
+    mv a0, s10        # load o array into first arg
+    lw t0, 0(s3)       # Load m0 rows
+    lw t1, 0(s6)       # Load m1 cols
+
+    # Replace 'mul a1, t0, t1' with repeated addition
+    li t2, 0          # Initialize result to 0
+    mv t3, t1         # Counter = t1
+
+multiply_a1_t0_t1_argmax:
+    beq t3, x0, multiply_a1_t0_t1_argmax_done
+    add t2, t2, t0    # result += t0
+    addi t3, t3, -1   # counter--
+    j multiply_a1_t0_t1_argmax
+
+multiply_a1_t0_t1_argmax_done:
+    mv a1, t2        # a1 = t0 * t1
+
     jal argmax
     
-    mv t0, a0 # move return value of argmax into t0
+    mv t0, a0        # move return value of argmax into t0
     
     lw a0, 0(sp)
     lw a1, 4(sp)
     lw a2, 8(sp)
     
-    addi sp, sp 12
+    addi sp, sp, 12
     
     mv a0, t0
-
+    
     # If enabled, print argmax(o) and newline
-    bne a2, x0, epilouge
+    bne a2, x0, epilogue
     
     addi sp, sp, -4
     sw a0, 0(sp)
@@ -314,8 +362,8 @@ classify:
     lw a0, 0(sp)
     addi sp, sp, 4
     
-    # Epilouge
-epilouge:
+    # Epilogue
+epilogue:
     addi sp, sp, -4
     sw a0, 0(sp)
     
@@ -357,9 +405,9 @@ epilouge:
 
     lw ra, 0(sp)
     
-    lw s0, 4(sp) # m0 matrix
-    lw s1, 8(sp) # m1 matrix
-    lw s2, 12(sp) # input matrix
+    lw s0, 4(sp)   # m0 matrix
+    lw s1, 8(sp)   # m1 matrix
+    lw s2, 12(sp)  # input matrix
     
     lw s3, 16(sp) 
     lw s4, 20(sp)
@@ -370,12 +418,12 @@ epilouge:
     lw s7, 32(sp)
     lw s8, 36(sp)
     
-    lw s9, 40(sp) # h
-    lw s10, 44(sp) # o
+    lw s9, 40(sp)   # h
+    lw s10, 44(sp)  # o
     
     addi sp, sp, 48
     
-    jr ra
+    jr ra              # Return to caller
 
 error_args:
     li a0, 31
@@ -384,3 +432,4 @@ error_args:
 error_malloc:
     li a0, 26
     j exit
+
